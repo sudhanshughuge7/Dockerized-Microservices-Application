@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:13
+    container_name: database
+    environment:
+      POSTGRES_DB: student
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    networks:
+      - backend
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    env_file: .env
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    networks:
+      - backend
+    depends_on:
+      - database
+    ports:
+      - "8091:8080"
+
+  web-app:
+    build:
+      context: ./web-app
+      dockerfile: Dockerfile
+    container_name: web-app
+    networks:
+      - frontend
+    depends_on:
+      - database
+      - api
+    ports:
+      - "8090:5000"
+    volumes:
+      - ./web-app:/app
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: api
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      - database
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api:/app
+    environment:
+      - SQLALCHEMY_DATABASE_URL = "postgresql://postgres:password@database:5432/student"
+
+networks:
+  backend:
+  frontend:
+
+volumes:
+  db_data:
